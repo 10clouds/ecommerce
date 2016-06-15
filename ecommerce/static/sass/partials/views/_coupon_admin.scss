@@ -1,12 +1,22 @@
 .coupon-create-edit-view {
-    .benefit-type label {
+    .benefit-type label,
+    .invoice-type label,
+    .invoice-discount-type label,
+    .tax-deduction label {
         font-weight: normal;
     }
+
     .benefit-addon {
-        width: 40px;
+        width: $input-addon-width;
     }
+
+    input[name="invoice_discount_value"],
     input[name="benefit_value"] {
-        width: 174px;
+        width: $small-input-width;
+    }
+
+    .tax_deducted_source_value {
+        width: $input-addon-width + $small-input-width;
     }
 
     .help-block {
@@ -62,6 +72,12 @@
     }
 }
 
+@media(max-width: $screen-md-max) {
+    .invoice-type > div {
+        width: 100% !important;
+    }
+}
+
 .coupon-detail-view {
     .coupon-information {
         .heading {
@@ -109,7 +125,14 @@
         .client-info,
         .total-paid,
         .catalog-query,
-        .seat-types {
+        .seat-types,
+        .invoice-type,
+        .invoice-number,
+        .invoiced-amount,
+        .invoice-discount-type,
+        .invoice-discount-value,
+        .invoice-payment-date,
+        .tax-deducted-source-value {
             @include float(left);
 
             @include margin-right(2%);

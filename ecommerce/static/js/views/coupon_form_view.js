@@ -106,12 +106,7 @@ define([
                 '.benefit-addon': {
                     observe: 'benefit_type',
                     onGet: function (val) {
-                        if (val === 'Percentage') {
-                            return '%';
-                        } else if (val === 'Absolute') {
-                            return '$';
-                        }
-                        return '';
+                        return this.toggleDollarPercentIcon(val);
                     }
                 },
                 'input[name=benefit_value]': {
@@ -162,6 +157,54 @@ define([
                 'input[name=course_seat_types]': {
                     observe: 'course_seat_types'
                 },
+                'input[name=invoice_type]': {
+                    observe: 'invoice_type'
+                },
+                'input[name=invoice_discount_type]': {
+                    observe: 'invoice_discount_type'
+                },
+                '.invoice-discount-addon': {
+                    observe: 'invoice_discount_type',
+                    onGet: function (val) {
+                        return this.toggleDollarPercentIcon(val);
+                    }
+                },
+                'input[name=invoice_discount_value]': {
+                    observe: 'invoice_discount_value',
+                    onSet: function(val) {
+                        if (val === '') {
+                            return null;
+                        }
+                        return val;
+                    }
+                },
+                'input[name=invoice_number]': {
+                    observe: 'invoice_number'
+                },
+                'input[name=invoice_payment_date]': {
+                    observe: 'invoice_payment_date',
+                    onGet: function (val) {
+                        return Utils.stripTimezone(val);
+                    },
+                    onSet: function(val) {
+                        if (val === '') {
+                            return null;
+                        }
+                        return val;
+                    }
+                },
+                'input[name=tax_deduction]': {
+                    observe: 'tax_deduction'
+                },
+                'input[name=tax_deducted_source_value]': {
+                    observe: 'tax_deducted_source',
+                    onSet: function(val) {
+                        if (val === '') {
+                            return null;
+                        }
+                        return val;
+                    }
+                }
             },
 
             events: {
@@ -172,6 +215,9 @@ define([
                 'blur [name=course_id]': 'fillFromCourse',
                 'change [name=seat_type]': 'changeSeatType',
                 'change [name=benefit_type]': 'changeUpperLimitForBenefitValue',
+                'change [name=invoice_discount_type]': 'changeUpperLimitForInvoiceDiscountValue',
+                'change [name=invoice_type]': 'toggleInvoiceFields',
+                'change [name=tax_deduction]': 'toggleTaxDeductedSourceField'
             },
 
             initialize: function (options) {
@@ -202,6 +248,24 @@ define([
                 this.$el.find('[name=benefit_value]').attr('max', max_value);
             },
 
+            changeUpperLimitForInvoiceDiscountValue: function () {
+                var is_invoice_discount_percentage = this.$el.find(
+                    '[name=invoice_discount_type]:checked').val() === 'Percentage',
+                    max_value = is_invoice_discount_percentage ? '100' : '';
+
+                this.$el.find('[name=invoice_discount_value]').attr('max', max_value);
+            },
+
+            toggleDollarPercentIcon: function (val) {
+                if (val === 'Percentage') {
+                    return '%';
+                } else if (val === 'Absolute') {
+                    return '$';
+                } else {
+                    return '';
+                }
+            },
+
             formGroup: function (el) {
                 return this.$el.find(el).closest('.form-group');
             },
@@ -230,6 +294,47 @@ define([
                 } else {
                     this.formGroup('[name=benefit_value]').addClass(this.hiddenClass);
                     this.formGroup('[name=code]').addClass(this.hiddenClass);
+                }
+            },
+ 
+            toggleInvoiceFields: function () {
+                var invoice_type = this.$el.find('[name=invoice_type]:checked').val(),
+                    prepaid_fields = [
+                        '[name=invoice_number]',
+                        '[name=invoice_payment_date]'
+                    ],
+                    self = this;
+                if (invoice_type === 'Postpaid') {
+                    _.each(prepaid_fields, function(field) {
+                        self.hideField(field, null);
+                    });
+                    self.hideField('[name=price]', 0);
+                    this.formGroup('[name=invoice_discount_value]').removeClass(this.hiddenClass);
+                    this.formGroup('[name=tax_deduction]').removeClass(this.hiddenClass);
+                } else if (invoice_type === 'Prepaid') {
+                    _.each(prepaid_fields, function(field) {
+                        self.formGroup(field).removeClass(self.hiddenClass);
+                    });
+                    this.formGroup('[name=price]').removeClass(this.hiddenClass);
+                    this.hideField('[name=invoice_discount_value]', null);
+                    this.formGroup('[name=tax_deduction]').removeClass(this.hiddenClass);
+                } else if (invoice_type === 'Not-Applicable') {
+                    _.each(prepaid_fields, function(field) {
+                        self.hideField(field, null);
+                    });
+                    self.hideField('[name=price]', 0);
+                    this.hideField('[name=invoice_discount_value]', null);
+                    this.hideField('[name=tax_deducted_value]', null);
+                    this.formGroup('[name=tax_deduction]').addClass(this.hiddenClass);
+                }
+            },
+
+            toggleTaxDeductedSourceField: function() {
+                var tax_deduction = this.$el.find('[name=tax_deduction]:checked').val();
+                if (tax_deduction === 'Yes') {
+                    this.formGroup('[name=tax_deducted_source_value]').removeClass(this.hiddenClass);
+                } else if (tax_deduction === 'No') {
+                    this.hideField('[name=tax_deducted_source_value]', null);
                 }
             },
 
@@ -370,7 +475,7 @@ define([
                 var quantity = this.$el.find('input[name=quantity]').val(),
                     totalValue = quantity * seatData.price;
                 this.model.set('total_value', totalValue);
-                this.$el.find('input[name=price]').val(totalValue);
+                this.model.set('price', totalValue);
             },
 
             disableNonEditableFields: function () {
@@ -421,6 +526,8 @@ define([
                     this.toggleQuantityField();
                     this.$el.find('.catalog-query').addClass('editing');
                     this.$el.find('button[type=submit]').html(gettext('Save Changes'));
+                    this.$el.find('[name=invoice_type]').trigger('change');
+                    this.$el.find('[name=tax_deduction]').trigger('change');
                     this.fillFromCourse();
                 } else {
                     var firstEntry = function(obj, i){ return i === 0 ? obj : null; },
@@ -430,6 +537,10 @@ define([
                     this.model.set('category', defaultCategory[0].id);
                     this.model.set('benefit_type', 'Percentage');
                     this.model.set('catalog_type', 'Single course');
+                    this.model.set('invoice_discount_type', 'Percentage');
+                    this.model.set('invoice_type', 'Prepaid');
+                    this.model.set('tax_deduction', 'No');
+                    this.$el.find('[name=invoice_discount_value]').attr('max', 100);
                     this.$el.find('[name=benefit_value]').attr('max', 100);
                     this.$el.find('button[type=submit]').html(gettext('Create Coupon'));
                     this.$el.find('.catalog-query').removeClass('editing');

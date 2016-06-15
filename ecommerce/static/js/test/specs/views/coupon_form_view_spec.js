@@ -120,6 +120,12 @@ define([
             });
 
             describe('discount code', function () {
+                var prepaid_invoice_fields = [
+                    '[name=invoice_number]',
+                    '[name=price]',
+                    '[name=invoice_payment_date]'
+                ];
+
                 beforeEach(function () {
                     view.$el.find('[name=code_type]').val('Discount code').trigger('change');
                 });
@@ -140,6 +146,13 @@ define([
                     expect(view.$el.find('[name="benefit_value"]').attr('max')).toBe('100');
                     view.$el.find('[name=benefit_type]').val('Absolute').trigger('change');
                     expect(view.$el.find('[name="benefit_value"]').attr('max')).toBe('');
+                });
+
+                it('should toggle upper limit on the invoice discount value input', function () {
+                    view.$el.find('#invoice_discount_percent').prop('checked', true).trigger('change');
+                    expect(view.$el.find('[name="invoice_discount_value"]').attr('max')).toBe('100');
+                    view.$el.find('#invoice_discount_fixed').prop('checked', true).trigger('change');
+                    expect(view.$el.find('[name="invoice_discount_value"]').attr('max')).toBe('');
                 });
 
                 it('should show the code field for once-per-customer and singe-use vouchers', function () {
@@ -177,6 +190,37 @@ define([
                     view.$el.find('[name=quantity]').val(111).trigger('change');
                     view.$el.find('[name=voucher_type]').val('Once per customer').trigger('change');
                     expect(visible('[name=code]')).toBe(true);
+                });
+
+                it('should show prepaid invoice fields when changing to Prepaid invoice type.', function() {
+                    view.$el.find('#already_invoiced').prop('checked', true).trigger('change');
+                    _.each(prepaid_invoice_fields, function(field) {
+                        expect(visible(field)).toBe(true);
+                    });
+                    expect(visible('[name=invoice_discount_value]')).toBe(false);
+                });
+
+                it('should show postpaid invoice fields when changing to Postpaid invoice type.', function() {
+                    view.$el.find('#invoice_after_redemption').prop('checked', true).trigger('change');
+                    _.each(prepaid_invoice_fields, function(field) {
+                        expect(visible(field)).toBe(false);
+                    });
+                    expect(visible('[name=invoice_discount_value]')).toBe(true);
+                });
+
+                it('should hide all invoice fields when changing to Not applicable invoice type.', function() {
+                    view.$el.find('#not_applicable').prop('checked', true).trigger('change');
+                    _.each(prepaid_invoice_fields, function(field) {
+                        expect(visible(field)).toBe(false);
+                    });
+                    expect(visible('[name=invoice_discount_value]')).toBe(false);
+                });
+
+                it('should show tax deduction source field when TSD is selected.', function() {
+                    view.$el.find('#tax_deducted').prop('checked', true).trigger('change');
+                    expect(visible('[name=tax_deducted_source_value]')).toBe(true);
+                    view.$el.find('#non_tax_deducted').prop('checked', true).trigger('change');
+                    expect(visible('[name=tax_deducted_source_value]')).toBe(false);
                 });
             });
 

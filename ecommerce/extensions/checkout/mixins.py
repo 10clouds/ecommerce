@@ -90,7 +90,6 @@ class EdxOrderPlacementMixin(OrderPlacementMixin):
                 billing_address=billing_address,
                 **kwargs
             )
-
             basket.submit()
 
         return self.handle_successful_order(order)
