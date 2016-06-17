@@ -3,6 +3,7 @@ import json
 
 import ddt
 from django.test import override_settings
+from django.utils import timezone
 import httpretty
 import mock
 from oscar.core.loading import get_model
@@ -29,7 +30,7 @@ StockRecord = get_model('partner', 'StockRecord')
 class LMSPublisherTests(CourseCatalogTestMixin, TestCase):
     def setUp(self):
         super(LMSPublisherTests, self).setUp()
-        self.course = CourseFactory(verification_deadline=datetime.datetime.now() + datetime.timedelta(days=7))
+        self.course = CourseFactory(verification_deadline=timezone.now() + datetime.timedelta(days=7))
         self.course.create_or_update_seat('honor', False, 0, self.partner)
         self.course.create_or_update_seat('verified', True, 50, self.partner)
         self.publisher = LMSPublisher()
@@ -37,11 +38,11 @@ class LMSPublisherTests(CourseCatalogTestMixin, TestCase):
             course_id=self.course.id
         )
 
-    def _mock_commerce_api(self, status, body=None):
+    def _mock_commerce_api(self, status, course_id, body=None):
         self.assertTrue(httpretty.is_enabled(), 'httpretty must be enabled to mock Commerce API calls.')
 
         body = body or {}
-        url = '{}/courses/{}/'.format(get_lms_commerce_api_url().rstrip('/'), self.course.id)
+        url = '{}/courses/{}/'.format(get_lms_commerce_api_url().rstrip('/'), course_id)
         httpretty.register_uri(httpretty.PUT, url, status=status, body=json.dumps(body),
                                content_type=JSON)
 
@@ -95,7 +96,7 @@ class LMSPublisherTests(CourseCatalogTestMixin, TestCase):
     )
     def test_api_bad_status(self, status, error_msg, expected_msg):
         """ If the Commerce API returns a non-successful status, an ERROR message should be logged. """
-        self._mock_commerce_api(status, error_msg)
+        self._mock_commerce_api(status, self.course.id, error_msg)
         with LogCapture(LOGGER_NAME) as l:
             response = self.publisher.publish(self.course)
             l.check(
@@ -112,7 +113,7 @@ class LMSPublisherTests(CourseCatalogTestMixin, TestCase):
     @ddt.data(200, 201)
     def test_api_success(self, status):
         """ If the Commerce API returns a successful status, an INFO message should be logged. """
-        self._mock_commerce_api(status)
+        self._mock_commerce_api(status, self.course.id)
 
         with LogCapture(LOGGER_NAME) as l:
             response = self.publisher.publish(self.course)
@@ -215,7 +216,7 @@ class LMSPublisherTests(CourseCatalogTestMixin, TestCase):
         # Setup the course and mock the API endpoints
         self.course.create_or_update_seat('credit', True, 100, self.partner, credit_provider='acme', credit_hours=1)
         self.mock_creditcourse_endpoint(self.course.id, api_status)
-        self._mock_commerce_api(201)
+        self._mock_commerce_api(201, self.course.id)
 
         # Attempt to publish the course
         return self.publisher.publish(self.course, access_token='access_token')
@@ -263,3 +264,55 @@ class LMSPublisherTests(CourseCatalogTestMixin, TestCase):
             self.assertEqual(api_response, " ".join([self.error_message, expected_error_msg]))
         else:
             self.assertEqual(api_response, self.error_message, expected_error_msg)
+
+    @httpretty.activate
+    def test_verification_deadline(self):
+        """ Verify that upgrade deadline can't occur AFTER verification deadline. """
+        upgrade_deadline = timezone.now() + datetime.timedelta(days=10)
+        self.course.create_or_update_seat('verified', True, 50, self.partner, expires=upgrade_deadline)
+
+        self._mock_commerce_api(200, self.course.id)
+
+        with LogCapture(LOGGER_NAME) as l:
+            response = self.publisher.publish(self.course)
+            self.assertIsNotNone(response)
+
+            l.check((
+                LOGGER_NAME,
+                'ERROR',
+                'Failed to publish commerce data for [{}] to LMS. The verification '
+                'deadline must occur AFTER the upgrade deadline.'.format(self.course.id)
+            ))
+
+    @httpretty.activate
+    def test_verification_deadline_with_audit_course(self):
+        """ Verify that only audit course can't have verification deadline. """
+        course = CourseFactory(verification_deadline=timezone.now() + datetime.timedelta(days=7))
+        course.create_or_update_seat('honor', False, 0, self.partner)
+        course.create_or_update_seat('audit', False, 0, self.partner)
+
+        self._mock_commerce_api(200, course.id)
+
+        with LogCapture(LOGGER_NAME) as l:
+            response = self.publisher.publish(course)
+            self.assertIsNone(response)
+
+            l.check((LOGGER_NAME, 'INFO', 'Successfully published commerce data for [{}].'.format(course.id)))
+
+        last_request = httpretty.last_request()
+
+        # Verify the headers passed to the API were correct.
+        expected = {
+            'Content-Type': JSON,
+            'X-Edx-Api-Key': EDX_API_KEY
+        }
+        self.assertDictContainsSubset(expected, last_request.headers)
+
+        # Verify the data passed to the API was correct.
+        actual = json.loads(last_request.body)
+        expected = {
+            'id': course.id,
+            'name': course.name,
+            'modes': [self.publisher.serialize_seat_for_commerce_api(seat) for seat in course.seat_products]
+        }
+        self.assertDictEqual(actual, expected)
