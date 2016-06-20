@@ -242,32 +242,34 @@ define([
             },
 
             changeUpperLimitForBenefitValue: function () {
-                var is_benefit_percentage = this.$el.find('[name=benefit_type]:checked').val() === 'Percentage',
+                var is_benefit_percentage = this.$('[name=benefit_type]:checked').val() === 'Percentage',
                     max_value = is_benefit_percentage ? '100' : '';
 
-                this.$el.find('[name=benefit_value]').attr('max', max_value);
+                this.$('[name=benefit_value]').attr('max', max_value);
             },
 
             changeUpperLimitForInvoiceDiscountValue: function () {
-                var is_invoice_discount_percentage = this.$el.find(
+                var is_invoice_discount_percentage = this.$(
                     '[name=invoice_discount_type]:checked').val() === 'Percentage',
                     max_value = is_invoice_discount_percentage ? '100' : '';
 
-                this.$el.find('[name=invoice_discount_value]').attr('max', max_value);
+                this.$('[name=invoice_discount_value]').attr('max', max_value);
             },
 
             toggleDollarPercentIcon: function (val) {
+                var icon;
                 if (val === 'Percentage') {
-                    return '%';
+                    icon = '%';
                 } else if (val === 'Absolute') {
-                    return '$';
+                    icon = '$';
                 } else {
-                    return '';
+                    icon = '';
                 }
+                return icon;
             },
 
             formGroup: function (el) {
-                return this.$el.find(el).closest('.form-group');
+                return this.$(el).closest('.form-group');
             },
 
             emptyCodeField: function () {
@@ -298,31 +300,31 @@ define([
             },
  
             toggleInvoiceFields: function () {
-                var invoice_type = this.$el.find('[name=invoice_type]:checked').val(),
+                var invoice_type = this.$('[name=invoice_type]:checked').val(),
                     prepaid_fields = [
                         '[name=invoice_number]',
                         '[name=invoice_payment_date]'
-                    ],
-                    self = this;
+                    ];
+
                 if (invoice_type === 'Postpaid') {
                     _.each(prepaid_fields, function(field) {
-                        self.hideField(field, null);
-                    });
-                    self.hideField('[name=price]', 0);
+                        this.hideField(field, null);
+                    }, this);
+                    this.hideField('[name=price]', 0);
                     this.formGroup('[name=invoice_discount_value]').removeClass(this.hiddenClass);
                     this.formGroup('[name=tax_deduction]').removeClass(this.hiddenClass);
                 } else if (invoice_type === 'Prepaid') {
                     _.each(prepaid_fields, function(field) {
-                        self.formGroup(field).removeClass(self.hiddenClass);
-                    });
+                        this.formGroup(field).removeClass(this.hiddenClass);
+                    }, this);
                     this.formGroup('[name=price]').removeClass(this.hiddenClass);
                     this.hideField('[name=invoice_discount_value]', null);
                     this.formGroup('[name=tax_deduction]').removeClass(this.hiddenClass);
                 } else if (invoice_type === 'Not-Applicable') {
                     _.each(prepaid_fields, function(field) {
-                        self.hideField(field, null);
-                    });
-                    self.hideField('[name=price]', 0);
+                        this.hideField(field, null);
+                    }, this);
+                    this.hideField('[name=price]', 0);
                     this.hideField('[name=invoice_discount_value]', null);
                     this.hideField('[name=tax_deducted_value]', null);
                     this.formGroup('[name=tax_deduction]').addClass(this.hiddenClass);
@@ -330,7 +332,7 @@ define([
             },
 
             toggleTaxDeductedSourceField: function() {
-                var tax_deduction = this.$el.find('[name=tax_deduction]:checked').val();
+                var tax_deduction = this.$('[name=tax_deduction]:checked').val();
                 if (tax_deduction === 'Yes') {
                     this.formGroup('[name=tax_deducted_source_value]').removeClass(this.hiddenClass);
                 } else if (tax_deduction === 'No') {
@@ -354,7 +356,7 @@ define([
 
             // Hiding a field should change the field's value to a default one.
             hideField: function(field_name, value) {
-                var field = this.$el.find(field_name);
+                var field = this.$(field_name);
                 this.formGroup(field_name).addClass(this.hiddenClass);
                 field.val(value);
                 field.trigger('change');
@@ -418,7 +420,7 @@ define([
              * Fill seat type options from course ID.
              */
             fillFromCourse: _.debounce(function () {
-                var courseId = this.$el.find('[name=course_id]').val(),
+                var courseId = this.$('[name=course_id]').val(),
                     course = Course.findOrCreate({id: courseId}),
                     parseId = _.compose(parseInt, _.property('id'));
 
@@ -437,12 +439,12 @@ define([
                             });
                     });
                     // update field
-                    this.$el.find('[name=seat_type]')
+                    this.$('[name=seat_type]')
                         .html(this.seatTypes)
                         .trigger('change');
 
                     if (this.editing) {
-                        this.$el.find('[name=seat_type]')
+                        this.$('[name=seat_type]')
                             .val(_s.capitalize(this.model.get('seat_type')));
                     }
                 }, this));
@@ -472,30 +474,30 @@ define([
             },
 
             updateTotalValue: function (seatData) {
-                var quantity = this.$el.find('input[name=quantity]').val(),
+                var quantity = this.$('input[name=quantity]').val(),
                     totalValue = quantity * seatData.price;
                 this.model.set('total_value', totalValue);
                 this.model.set('price', totalValue);
             },
 
             disableNonEditableFields: function () {
-                this.$el.find('select[name=code_type]').attr('disabled', true);
-                this.$el.find('select[name=voucher_type]').attr('disabled', true);
-                this.$el.find('input[name=quantity]').attr('disabled', true);
-                this.$el.find('input[name=course_id]').attr('disabled', true);
-                this.$el.find('input[name=code]').attr('disabled', true);
-                this.$el.find('input[name=benefit_type]').attr('disabled', true);
-                this.$el.find('select[name=seat_type]').attr('disabled', true);
-                this.$el.find('input[name=max_uses]').attr('disabled', true);
-                this.$el.find('input[name=catalog_type]').attr('disabled', true);
+                this.$('select[name=code_type]').attr('disabled', true);
+                this.$('select[name=voucher_type]').attr('disabled', true);
+                this.$('input[name=quantity]').attr('disabled', true);
+                this.$('input[name=course_id]').attr('disabled', true);
+                this.$('input[name=code]').attr('disabled', true);
+                this.$('input[name=benefit_type]').attr('disabled', true);
+                this.$('select[name=seat_type]').attr('disabled', true);
+                this.$('input[name=max_uses]').attr('disabled', true);
+                this.$('input[name=catalog_type]').attr('disabled', true);
             },
 
             getSeatData: function () {
-                return this.$el.find('[value=' + this.getSeatType() + ']').data();
+                return this.$('[value=' + this.getSeatType() + ']').data();
             },
 
             getSeatType: function () {
-                return this.$el.find('[name=seat_type]').val();
+                return this.$('[name=seat_type]').val();
             },
 
             updateCatalogQuery: function() {
@@ -512,22 +514,22 @@ define([
                 this.stickit();
 
                 this.toggleCatalogTypeField();
-                this.dynamic_catalog_view.setElement(this.$el.find('.catalog_buttons')).render();
+                this.dynamic_catalog_view.setElement(this.$('.catalog_buttons')).render();
 
                 // Avoid the need to create this jQuery object every time an alert has to be rendered.
-                this.$alerts = this.$el.find('.alerts');
+                this.$alerts = this.$('.alerts');
 
                 if (this.editing) {
-                    this.$el.find('select[name=category]').val(this.model.get('categories')[0].id).trigger('change');
+                    this.$('select[name=category]').val(this.model.get('categories')[0].id).trigger('change');
                     this.disableNonEditableFields();
                     this.toggleCouponTypeField();
                     this.toggleVoucherTypeField();
                     this.toggleCodeField();
                     this.toggleQuantityField();
-                    this.$el.find('.catalog-query').addClass('editing');
-                    this.$el.find('button[type=submit]').html(gettext('Save Changes'));
-                    this.$el.find('[name=invoice_type]').trigger('change');
-                    this.$el.find('[name=tax_deduction]').trigger('change');
+                    this.$('.catalog-query').addClass('editing');
+                    this.$('button[type=submit]').html(gettext('Save Changes'));
+                    this.$('[name=invoice_type]').trigger('change');
+                    this.$('[name=tax_deduction]').trigger('change');
                     this.fillFromCourse();
                 } else {
                     var firstEntry = function(obj, i){ return i === 0 ? obj : null; },
@@ -540,10 +542,10 @@ define([
                     this.model.set('invoice_discount_type', 'Percentage');
                     this.model.set('invoice_type', 'Prepaid');
                     this.model.set('tax_deduction', 'No');
-                    this.$el.find('[name=invoice_discount_value]').attr('max', 100);
-                    this.$el.find('[name=benefit_value]').attr('max', 100);
-                    this.$el.find('button[type=submit]').html(gettext('Create Coupon'));
-                    this.$el.find('.catalog-query').removeClass('editing');
+                    this.$('[name=invoice_discount_value]').attr('max', 100);
+                    this.$('[name=benefit_value]').attr('max', 100);
+                    this.$('button[type=submit]').html(gettext('Create Coupon'));
+                    this.$('.catalog-query').removeClass('editing');
                 }
 
                 // Add date picker

@@ -79,19 +79,15 @@ define([
                 return _s.sprintf(stringFormat, parseInt(value));
             },
 
-            render: function () {
-                var html,
-                    voucher = this.model.get('vouchers')[0],
-                    category = this.model.get('categories')[0].name,
-                    note = this.model.get('note'),
-                    invoice_type = this.model.get('invoice_type'),
+            formatInvoiceData: function() {
+                var invoice_type = this.model.get('invoice_type'),
                     invoice_number = this.model.get('invoice_number'),
                     invoice_payment_date = this.model.get('invoice_payment_date'),
                     invoice_discount_type = this.model.get('invoice_discount_type'),
                     invoice_discount_value = this.model.get('invoice_discount_value'),
                     invoiced_amount = this.model.get('invoiced_amount'),
                     tax_deducted_source = this.model.get('tax_deducted_source');
-
+                
                 if (invoice_discount_value === null) {
                     invoice_discount_type = null;
                 } else  {
@@ -102,6 +98,26 @@ define([
                 if (invoice_payment_date) {
                     invoice_payment_date = this.formatDateTime(invoice_payment_date);
                 }
+
+                return {
+                    'invoice_type': invoice_type,
+                    'invoice_number': invoice_number,
+                    'invoice_payment_date': invoice_payment_date,
+                    'invoice_discount_type': invoice_discount_type,
+                    'invoice_discount_value': invoice_discount_value,
+                    'invoiced_amount': invoiced_amount,
+                    'tax_deducted_source': tax_deducted_source,
+                };
+            },
+
+            render: function () {
+                var html,
+                    voucher = this.model.get('vouchers')[0],
+                    category = this.model.get('categories')[0].name,
+                    note = this.model.get('note'),
+                    invoice_data = this.formatInvoiceData();
+
+
                 html = this.template({
                     coupon: this.model.toJSON(),
                     couponType: this.couponType(voucher),
@@ -114,13 +130,13 @@ define([
                     usage: this.usageLimitation(voucher),
                     category: category,
                     note: note,
-                    invoice_type: invoice_type,
-                    invoice_number: invoice_number,
-                    invoice_payment_date: invoice_payment_date,
-                    invoice_discount_type: invoice_discount_type,
-                    invoice_discount_value: invoice_discount_value,
-                    invoiced_amount: invoiced_amount,
-                    tax_deducted_source_value: tax_deducted_source
+                    invoice_type: invoice_data.invoice_type,
+                    invoice_number: invoice_data.invoice_number,
+                    invoice_payment_date: invoice_data.invoice_payment_date,
+                    invoice_discount_type: invoice_data.invoice_discount_type,
+                    invoice_discount_value: invoice_data.invoice_discount_value,
+                    invoiced_amount: invoice_data.invoiced_amount,
+                    tax_deducted_source_value: invoice_data.tax_deducted_source
                 });
 
                 this.$el.html(html);
@@ -140,7 +156,7 @@ define([
             },
 
             renderVoucherTable: function () {
-                this.$el.find('#vouchersTable').DataTable({
+                this.$('#vouchersTable').DataTable({
                     autoWidth: false,
                     info: true,
                     paging: false,
@@ -163,20 +179,20 @@ define([
 
             renderCourseData: function () {
                 if (this.model.get('catalog_type') === 'Single course') {
-                    this.$el.find('.course-info').append(
+                    this.$('.course-info').append(
                         _s.sprintf(
                             '<div class="value">%s<span class="pull-right">%s</span></div>',
                             this.model.get('course_id'),
                             this.model.get('seat_type'))
                     );
 
-                    this.$el.find('.catalog-query').addClass('hidden');
-                    this.$el.find('.seat-types').addClass('hidden');
-                    this.$el.find('.course-info').removeClass('hidden');
+                    this.$('.catalog-query').addClass('hidden');
+                    this.$('.seat-types').addClass('hidden');
+                    this.$('.course-info').removeClass('hidden');
                 } else if (this.model.get('catalog_type') === 'Multiple courses') {
-                    this.$el.find('.course-info').addClass('hidden');
-                    this.$el.find('.catalog-query').removeClass('hidden');
-                    this.$el.find('.seat-types').removeClass('hidden');
+                    this.$('.course-info').addClass('hidden');
+                    this.$('.catalog-query').removeClass('hidden');
+                    this.$('.seat-types').removeClass('hidden');
                 }
                 return this;
             },
