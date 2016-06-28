@@ -3,6 +3,8 @@ from cStringIO import StringIO
 import logging
 import os
 
+from django.views.generic.base import TemplateResponse
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.core.management import call_command
 from django.db import transaction
@@ -19,6 +21,7 @@ from ecommerce.extensions.checkout.mixins import EdxOrderPlacementMixin
 from ecommerce.extensions.payment.exceptions import InvalidSignatureError
 from ecommerce.extensions.payment.processors.cybersource import Cybersource
 from ecommerce.extensions.payment.processors.paypal import Paypal
+from ecommerce.extensions.payment.processors.braintree import Braintree
 
 
 logger = logging.getLogger(__name__)
@@ -317,3 +320,85 @@ class PaypalProfileAdminView(View):
         logger.removeHandler(log_handler)
 
         return HttpResponse(output, content_type='text/plain', status=200 if success else 500)
+
+
+class BraintreeCheckoutView(EdxOrderPlacementMixin, View):
+
+    @property
+    def payment_processor(self):
+        return Braintree()
+
+    @method_decorator(transaction.non_atomic_requests)
+    @method_decorator(login_required)
+    @method_decorator(csrf_exempt)
+    def dispatch(self, request, *args, **kwargs):
+        return super(BraintreeCheckoutView, self).dispatch(request, *args, **kwargs)
+
+    def get_basket(self, basket_id):
+        if not basket_id:
+            return None
+
+        try:
+            basket_id = int(basket_id)
+            basket = Basket.objects.get(id=basket_id)
+            basket.strategy = strategy.Default()
+            return basket
+        except (ValueError, ObjectDoesNotExist):
+            return None
+
+    def post(self, request, *args, **kwargs):  # pylint:disable=unused-argument
+        request_post = request.POST.dict()
+        if 'client_token' in request_post and 'merchant_id' in request_post:
+            request_post['basket'] = self.get_basket(request_post['basket_id'])
+            response = TemplateResponse(request, 'checkout/braintree_payment.html', request_post)
+            return response.render()
+        else:
+            nonce = request.POST['payment_method_nonce']
+            basket_id = request.POST['basket_id']
+
+            # Retrieve the basket, or bail out, if it cannot be found.
+            basket = self.get_basket(basket_id)
+
+            if not basket:
+                logger.error('Payment requested for non-existent basket [%s].',
+                             basket_id)
+                # TODO Handle this better (perhaps redirect to an error page).
+                return HttpResponseBadRequest()
+
+            try:
+                with transaction.atomic():
+                    try:
+                        # Process the payment via Braintree
+                        self.handle_payment(nonce, basket)
+                    except PaymentError:
+                        # TODO Handle this better (perhaps redirect to an error page).
+                        return HttpResponseBadRequest()
+            except:  # pylint: disable=bare-except
+                logger.exception('Attempts to handle payment for basket [%d] failed.', basket.id)
+                # TODO Handle this better (perhaps redirect to an error page).
+                return HttpResponseBadRequest()
+
+            # Create the order in our system
+            try:
+                with transaction.atomic():
+                    shipping_method = NoShippingRequired()
+                    shipping_charge = shipping_method.calculate(basket)
+                    order_total = OrderTotalCalculator().calculate(basket, shipping_charge)
+
+                    try:
+                        self.handle_order_placement(
+                            order_number=basket.order_number,
+                            user=basket.owner,
+                            basket=basket,
+                            shipping_address=None,
+                            shipping_method=shipping_method,
+                            shipping_charge=shipping_charge,
+                            billing_address=None,
+                            order_total=order_total
+                        )
+                    except UnableToPlaceOrder:
+                        logger.exception('Payment was executed, but an order was not created for basket [%d].', basket.id)
+            except:  # pylint: disable=bare-except
+                logger.exception('Payment was received, but attempts to create an order for basket [%d] failed.', basket.id)
+            receipt_url = u'{}?basket_id={}'.format(self.payment_processor.receipt_page_url, basket.id)
+            return redirect(receipt_url)

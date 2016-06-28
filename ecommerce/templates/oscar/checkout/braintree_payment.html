@@ -1,0 +1,168 @@
+{% extends "edx/base.html" %}
+{% load i18n %}
+{% load staticfiles %}
+
+{% block title %}
+  {% trans "Payment details | Braintree checkout" %}
+{% endblock %}
+
+{% block stylesheets %}
+  <link rel="stylesheet" href="{% static 'css/base/braintree_form.css' %}" type="text/x-scss">
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+  <header>
+    <h1>Payment Method</h1>
+  </header>
+
+  <form id="braintree-payment-form" class="scale-down" action="{% url 'braintree_checkout' %}" method="POST">
+    <input type="hidden" name="payment_method_nonce">
+    <input type="hidden" name="basket_id" value="{{ basket.id }}">
+    <div class="cardinfo-card-number">
+      <label class="cardinfo-label" for="card-number">Card Number</label>
+      <div class='input-wrapper' id="card-number"></div>
+      <div id="card-image"></div>
+    </div>
+
+    <div class="cardinfo-wrapper">
+      <div class="cardinfo-exp-date">
+        <label class="cardinfo-label" for="expiration-date">Valid Thru</label>
+        <div class='input-wrapper' id="expiration-date"></div>
+      </div>
+
+      <div class="cardinfo-cvv">
+        <label class="cardinfo-label" for="cvv">CVV</label>
+        <div class='input-wrapper' id="cvv"></div>
+      </div>
+    </div>
+  </form>
+
+  <input id="button-pay" type="submit" value="Continue" />
+</div>
+
+<!-- Load the required client component. -->
+<script src="https://js.braintreegateway.com/web/3.0.0-beta.9/js/client.min.js"></script>
+
+<!-- Load Hosted Fields component. -->
+<script src="https://js.braintreegateway.com/web/3.0.0-beta.9/js/hosted-fields.min.js"></script>
+
+<script>
+var form = document.querySelector('#braintree-payment-form');
+var submit = document.querySelector('input[type="submit"]');
+var payment_nonce = document.querySelector('input[name="payment_method_nonce"]');
+
+braintree.client.create({
+    authorization: '{{ client_token }}'
+  }, function (err, clientInstance) {
+  if (err) {
+    console.error(err);
+    return;
+  }
+
+  // Create input fields and add text styles  
+  braintree.hostedFields.create({
+    client: clientInstance,
+    styles: {
+      'input': {
+        'color': '#282c37',
+        'font-size': '16px',
+        'transition': 'color 0.1s',
+        'line-height': '3'
+      },
+      // Style the text of an invalid input
+      'input.invalid': {
+        'color': '#E53A40'
+      },
+      // placeholder styles need to be individually adjusted
+      '::-webkit-input-placeholder': {
+        'color': 'rgba(0,0,0,0.6)'
+      },
+      ':-moz-placeholder': {
+        'color': 'rgba(0,0,0,0.6)'
+      },
+      '::-moz-placeholder': {
+        'color': 'rgba(0,0,0,0.6)'
+      },
+      ':-ms-input-placeholder ': {
+        'color': 'rgba(0,0,0,0.6)'
+      }
+
+    },
+    // Add information for individual fields
+    fields: {
+      number: {
+        selector: '#card-number',
+        placeholder: '1111 1111 1111 1111'
+      },
+      cvv: {
+        selector: '#cvv',
+        placeholder: '123'
+      },
+      expirationDate: {
+        selector: '#expiration-date',
+        placeholder: '10 / 2019'
+      }
+    }
+  }, function (err, hostedFieldsInstance) {
+    if (err) {
+      console.error(err);
+      return;
+    }
+
+    hostedFieldsInstance.on('validityChange', function (event) {
+      // Check if all fields are valid, then show submit button
+      var formValid = Object.keys(event.fields).every(function (key) {
+        return event.fields[key].isValid;
+      });
+
+      if (formValid) {
+        $('#button-pay').addClass('show-button');
+      } else {
+        $('#button-pay').removeClass('show-button');
+      }
+    });
+
+    hostedFieldsInstance.on('empty', function (event) {
+      $('header').removeClass('header-slide');
+      $('#card-image').removeClass();
+      $(form).removeClass();
+    });
+
+    hostedFieldsInstance.on('cardTypeChange', function (event) {
+      // Change card bg depending on card type
+      if (event.cards.length === 1) {
+        $(form).removeClass().addClass(event.cards[0].type);
+        $('#card-image').removeClass().addClass(event.cards[0].type);
+        $('header').addClass('header-slide');
+        
+        // Change the CVV length for AmericanExpress cards
+        if (event.cards[0].code.size === 4) {
+          hostedFieldsInstance.setPlaceholder('cvv', '1234');
+        } 
+      } else {
+        hostedFieldsInstance.setPlaceholder('cvv', '123');
+      }
+    });
+
+    submit.addEventListener('click', function (event) {
+      event.preventDefault();
+
+      hostedFieldsInstance.tokenize(function (err, payload) {
+        if (err) {
+          console.error(err);
+          return;
+        }
+        console.log(payload.nonce);
+        {% if mode == 'sandbox' %}
+          payment_nonce.value = 'fake-valid-nonce';
+        {% else %}
+          payment_nonce.value = payload.nonce;
+        {% endif %}
+        form.submit();
+      });
+    }, false);
+  });
+});
+</script>
+{% endblock content %}
