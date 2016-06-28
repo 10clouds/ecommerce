@@ -42,10 +42,10 @@ class Braintree(BasePaymentProcessor):
         self.receipt_page_url = configuration['receipt_page_url']
         self.ecommerce_url_root = settings.ECOMMERCE_URL_ROOT
 
-        if self.enviroment_mode == 'sandbox':
-            self.enviroment_mode_class = braintree.Environment.Sandbox
-        else:
+        if self.enviroment_mode == 'production':
             self.enviroment_mode_class = braintree.Environment.Production
+        else:
+            self.enviroment_mode_class = braintree.Environment.Sandbox
 
         braintree.Configuration.configure(self.enviroment_mode_class,
                                           merchant_id=self.merchant_id,
