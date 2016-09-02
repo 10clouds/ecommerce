@@ -106,7 +106,7 @@ class Braintree(BasePaymentProcessor):
     def generate_client_token(self, user):
         params = {}
         customer = None
-        customer_id = user.get_username()
+        customer_id = "{}".format(user.id)
 
         try:
             customer = braintree.Customer.find(customer_id)
@@ -158,7 +158,7 @@ class Braintree(BasePaymentProcessor):
 
         result = braintree.Transaction.sale({
             'amount': basket.total_incl_tax,
-            'customer_id': basket.owner.get_username(),
+            'customer_id': basket.owner.id,
             'options': {
                 'submit_for_settlement': True,
                 'store_in_vault_on_success': True,
