@@ -80,49 +80,51 @@
 
         <div class="total">
             <div class="row">
-            {% if not is_bulk_purchase %}
-                {% block vouchers %}
-                    {% if basket.contains_a_voucher %}
-                        <div class="vouchers col-sm-6">
-                            {% for voucher in basket.vouchers.all %}
-                                <p class="voucher">
-                                {% blocktrans with voucher_code=voucher.code %}
-                                    Coupon code {{voucher_code}} applied
-                                {% endblocktrans %}
-                                <form action="{% url 'basket:vouchers-remove' pk=voucher.id %}" method="POST">
-                                    {% csrf_token %}
-                                    <button class="remove-voucher" type="submit"><i class="fa fa-times"></i></button>
-                                </form>
-                                </p>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        {# Hide the entire section if a custom BasketView doesn't pass in a voucher form #}
-                        {% if voucher_form %}
-                            <div class="use-voucher col-sm-6">
-                                <p id="voucher_form_link"><a href="#voucher">{% trans "Apply a coupon code" %}</a></p>
-                                <div id="voucher_form_container">
-                                    <form id="voucher_form" action="{% url 'basket:vouchers-add' %}" method="post">
+                {% comment %}
+                {% if not is_bulk_purchase %}
+                    {% block vouchers %}
+                        {% if basket.contains_a_voucher %}
+                            <div class="vouchers col-sm-6">
+                                {% for voucher in basket.vouchers.all %}
+                                    <p class="voucher">
+                                    {% blocktrans with voucher_code=voucher.code %}
+                                        Coupon code {{voucher_code}} applied
+                                    {% endblocktrans %}
+                                    <form action="{% url 'basket:vouchers-remove' pk=voucher.id %}" method="POST">
                                         {% csrf_token %}
-                                        <div class="code">
-                                            <input id="id_code" name="code" type="text" placeholder="{% trans 'Enter a coupon code' %}">
-                                            <button type="submit"
-                                                    class="btn btn-default"
-                                                    data-loading-text="{% trans 'Applying...' %}"
-                                                    data-track-type="click"
-                                                    data-track-event="edx.bi.ecommerce.basket.voucher_applied"
-                                                    data-track-category="voucher-application"
-                                                    data-voucher-code="{{voucher_code}}">
-                                                {% trans "Apply" %}
-                                            </button>
-                                        </div>
+                                        <button class="remove-voucher" type="submit"><i class="fa fa-times"></i></button>
                                     </form>
-                                </div>
+                                    </p>
+                                {% endfor %}
                             </div>
+                        {% else %}
+                            {# Hide the entire section if a custom BasketView doesn't pass in a voucher form #}
+                            {% if voucher_form %}
+                                <div class="use-voucher col-sm-6">
+                                    <p id="voucher_form_link"><a href="#voucher">{% trans "Apply a coupon code" %}</a></p>
+                                    <div id="voucher_form_container">
+                                        <form id="voucher_form" action="{% url 'basket:vouchers-add' %}" method="post">
+                                            {% csrf_token %}
+                                            <div class="code">
+                                                <input id="id_code" name="code" type="text" placeholder="{% trans 'Enter a coupon code' %}">
+                                                <button type="submit"
+                                                        class="btn btn-default"
+                                                        data-loading-text="{% trans 'Applying...' %}"
+                                                        data-track-type="click"
+                                                        data-track-event="edx.bi.ecommerce.basket.voucher_applied"
+                                                        data-track-category="voucher-application"
+                                                        data-voucher-code="{{voucher_code}}">
+                                                    {% trans "Apply" %}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% endif %}
                         {% endif %}
-                    {% endif %}
-                {% endblock vouchers %}
-            {% endif %}
+                    {% endblock vouchers %}
+                {% endif %}
+                {% endcomment %}
 
                 {% block baskettotals %}
                     {% include 'basket/partials/basket_totals.html' with editable=1 %}
@@ -165,9 +167,9 @@
                                     {% trans "Checkout" %}
                                 {% elif processor.NAME == 'paypal' %}
                                     {# Translators: Do NOT translate the name PayPal. #}
-                                    {% trans "Checkout with PayPal" %}
+                                    {% trans "Pay with PayPal" %}
                                 {% elif processor.NAME == 'braintree' %}
-                                    {% trans "Checkout with " %} Braintree
+                                    {% trans "Credit card " %}
                                 {% endif %}
                             </button>
                         {% endfor %}
@@ -175,7 +177,7 @@
                 </div>
             </div>
         </div>
-
+        {% comment %}
         <div class="row verification-note">
             <div class="col-sm-12">
                 <span><i class="fa fa-exclamation-circle"></i></span>
@@ -183,16 +185,18 @@
                 {% if is_verification_required %}
                     {% trans "<b>Note:</b> To earn a verified certificate, you must verify your identity with a <b>webcam</b> and a <b>government-issued photo ID</b>. " %}
                 {% else %}
-                    {% trans "<b>Note:</b> To complete your enrollment, select Checkout or Checkout with PayPal." %}
+                    {% trans "<b>Note:</b> To complete your enrollment, select Pay with PayPal or Credit card." %}
                 {% endif %}
             </div>
         </div>
+
         <div class="row help">
             <div class="col-sm-12">
                 <p><b>{% trans "Have questions?" %}</b></p>
                 <a href="{{ support_url }}">{% trans "Please read our FAQs to view common questions about our certificates." %}</a>
             </div>
         </div>
+        {% endcomment %}
     </div>
 {% else %}
     {% block emptybasket %}
@@ -202,12 +206,8 @@
           <a href="{{ homepage_url }}">
         {% endcaptureas %}
 
-        {% captureas support_link_start %}
-          <a href="{{ support_url }}">
-        {% endcaptureas %}
-
         {% blocktrans with link_end="</a>" %}
-          You have not been charged. Return to your {{ dashboard_link_start }}dashboard{{ link_end }} to try again, or {{ support_link_start }}contact {{ platform_name }} Support{{ link_end }}.
+          You have not been charged. Return to your {{ dashboard_link_start }}dashboard{{ link_end }} to try again.
         {% endblocktrans %}
     </div>
     {% endblock %}
