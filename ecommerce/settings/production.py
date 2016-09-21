@@ -80,3 +80,7 @@ for __, configs in PAYMENT_PROCESSOR_CONFIG.iteritems():
             'error_path': PAYMENT_PROCESSOR_ERROR_PATH,
         })
 # END PAYMENT PROCESSOR OVERRIDES
+
+# Load private settings
+if os.path.isfile(join(dirname(abspath(__file__)), 'private.py')):
+    from .private import *  # pylint: disable=import-error
