@@ -56,6 +56,15 @@ ATOMIC_PUBLICATION_URLS = [
     ),
 ]
 
+EDEVATE_ATOMIC_PUBLICATION_URLS = [
+    url(r'^$', publication_views.EdevateAtomicPublicationView.as_view(), name='create'),
+    url(
+        r'^{course_id}$'.format(course_id=COURSE_ID_PATTERN),
+        publication_views.EdevateAtomicPublicationView.as_view(),
+        name='update'
+    ),
+]
+
 urlpatterns = [
     url(r'^baskets/', include(BASKET_URLS, namespace='baskets')),
     url(r'^checkout/$', include(CHECKOUT_URLS, namespace='checkout')),
@@ -63,6 +72,7 @@ urlpatterns = [
     url(r'^payment/', include(PAYMENT_URLS, namespace='payment')),
     url(r'^refunds/', include(REFUND_URLS, namespace='refunds')),
     url(r'^publication/', include(ATOMIC_PUBLICATION_URLS, namespace='publication')),
+    url(r'^edevate_publication/', include(EDEVATE_ATOMIC_PUBLICATION_URLS, namespace='edevate-publication')),
 ]
 
 router = ExtendedSimpleRouter()
