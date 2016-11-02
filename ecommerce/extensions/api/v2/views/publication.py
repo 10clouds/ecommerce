@@ -1,6 +1,8 @@
 """HTTP endpoints for course publication."""
+from django.contrib.auth import get_user_model
+
 from rest_framework import status, generics
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.response import Response
 
 from ecommerce.extensions.api import serializers
@@ -42,3 +44,22 @@ class AtomicPublicationView(generics.CreateAPIView, generics.UpdateAPIView):
                 content = serializer.data
                 content['message'] = message if message else None
                 return Response(content, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+class EdevateAtomicPublicationView(generics.CreateAPIView, generics.UpdateAPIView):
+    """Attempt to save and publish a Course after admin verify it on Edevate.
+       If either fails, the entire operation is rolled back.
+       This keeps Otto, Edevate and the LMS in sync.
+    """
+    permission_classes = (AllowAny,)
+    serializer_class = serializers.AtomicPublicationSerializer
+
+    def get_access_token(self):
+        user = get_user_model().objects.filter(is_superuser=True).first()
+        return user.access_token
+
+    def get_serializer_context(self):
+        context = super(EdevateAtomicPublicationView, self).get_serializer_context()
+        context['access_token'] = self.get_access_token()
+        context['partner'] = get_partner_for_site(self.request)
+        return context
