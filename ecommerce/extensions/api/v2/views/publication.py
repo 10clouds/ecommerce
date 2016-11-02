@@ -47,9 +47,9 @@ class AtomicPublicationView(generics.CreateAPIView, generics.UpdateAPIView):
 
 
 class EdevateAtomicPublicationView(generics.CreateAPIView, generics.UpdateAPIView):
-    """Attempt to save and publish a Course and associated products.
-
-    If either fails, the entire operation is rolled back. This keeps Otto and the LMS in sync.
+    """Attempt to save and publish a Course after admin verify it on Edevate.
+       If either fails, the entire operation is rolled back.
+       This keeps Otto, Edevate and the LMS in sync.
     """
     permission_classes = (AllowAny,)
     serializer_class = serializers.AtomicPublicationSerializer
