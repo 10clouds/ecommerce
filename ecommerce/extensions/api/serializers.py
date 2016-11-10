@@ -336,6 +336,12 @@ class AtomicPublicationSerializer(serializers.Serializer):  # pylint: disable=ab
         return {attr['name']: attr['value'] for attr in attrs}
 
 
+class EdevateAtomicPublicationSerializer(AtomicPublicationSerializer):  # pylint: disable=abstract-method
+    def __init__(self, *args, **kwargs):
+        super(EdevateAtomicPublicationSerializer, self).__init__(*args, **kwargs)
+        self.partner = kwargs['context'].pop('partner', None)
+
+
 class PartnerSerializer(serializers.ModelSerializer):
     """Serializer for the Partner object"""
     catalogs = serializers.SerializerMethodField()
