@@ -12,7 +12,7 @@ $font-path: '/static/bower_components/edx-ux-pattern-library/_src/pattern-librar
 $bootstrap-sass-asset-helper: true;
 
 // body
-$body-bg: darken(white, 2%);
+$body-bg: white;
 
 // borders
 $border-radius-base: 3px;
@@ -36,3 +36,18 @@ $footer-margin: $footer-height;
 // Miscellaneous
 $container-bg: white;
 $breadcrumb-bg: white;
+
+//-----------------
+//  Font Assignment
+//-----------------
+
+@font-face {
+    font-family: 'titilium';
+    src: url('/static/fonts/titilium/TitilliumRegular.eot');
+    src: url('/static/fonts/titilium/TitilliumRegular.eot') format('embedded-opentype'),
+         url('/static/fonts/titilium/TitilliumRegular.woff2') format('woff2'),
+         url('/static/fonts/titilium/TitilliumRegular.woff') format('woff'),
+         url('/static/fonts/titilium/TitilliumRegular.ttf') format('truetype');
+}
+
+$titilium: 'titilium', Helvetica Neue, Helvetica, Arial, sans-serif !important;
