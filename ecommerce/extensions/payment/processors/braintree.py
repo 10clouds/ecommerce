@@ -58,7 +58,7 @@ class Braintree(BasePaymentProcessor):
                                         reverse('braintree_checkout')),
             'basket_id': basket.pk,
             'merchant_id': self.merchant_id,
-            'client_token': self.generate_client_token(request.user),
+            'client_token': self.generate_client_token(),
             'mode': self.enviroment_mode
         }
 
@@ -114,7 +114,7 @@ class Braintree(BasePaymentProcessor):
                          error.message)
 
     def get_or_create_customer(self, user):
-        customer_id = "{}".format(user.id)
+        customer_id = str(user.id)
         try:
             customer = braintree.Customer.find(customer_id)
             logger.debug('Found existing Braintree customer [%s].',
@@ -139,8 +139,7 @@ class Braintree(BasePaymentProcessor):
                 self.log_deep_errors(result.errors.deep_errors)
         return customer
 
-    def generate_client_token(self, user):
-        customer = self.get_or_create_customer(user)
+    def generate_client_token(self):
         return braintree.ClientToken.generate()
 
     @classmethod
@@ -229,7 +228,7 @@ class Braintree(BasePaymentProcessor):
             It will return braintree PaymentMethod instance or
             throw GatewayError Exception
         """
-        customer_id = "{}".format(customer.id)
+        customer_id = str(customer.id)
         try:
             customer_payment_method = customer.payment_methods[0].token
         except IndexError:
@@ -240,7 +239,6 @@ class Braintree(BasePaymentProcessor):
             token = result.token
             logger.info('Found existing PaymentMethod [%s] for customer [%s].',
                         token, customer_id)
-
         except braintree.exceptions.not_found_error.NotFoundError:
             result = braintree.PaymentMethod.create({
                 "customer_id": customer_id,
@@ -263,7 +261,7 @@ class Braintree(BasePaymentProcessor):
 
         result = braintree.Subscription.create({
             'payment_method_token': payment_method_token,
-            'plan_id': 'edevate_subscription'
+            'plan_id': settings.SUBSCRIPTION_PLAN_ID
         })
         transaction = result.subscription
 
