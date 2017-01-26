@@ -26,7 +26,7 @@
                         <div class="row">
                             <div class="col-md-2 col-sm-12 course_image">
                                 {{ form.id }}
-                                <img class="thumbnail" src="{{ line_data.image_url }}" alt="{{ line_data.course_name }}"/>
+                                <img class="thumbnail" src="{{ line_data.image_url }}" alt="{{ line_data.course_name }}" onerror="this.onerror=null;this.src='{{ lms_base_url }}/static/themes/stanford/images/courses_placeholder.png';"/>
                             </div>
                             <div class="col-md-5 col-sm-12">
                                 <p class="course_name">{{ line_data.course_name }} - {{ line_data.course_key.org }} ({{ line_data.course_key.run }})</p>

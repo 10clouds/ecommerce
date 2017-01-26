@@ -58,11 +58,14 @@ class Braintree(BasePaymentProcessor):
                                         reverse('braintree_checkout')),
             'basket_id': basket.pk,
             'merchant_id': self.merchant_id,
-            'client_token': self.generate_client_token(request.user),
+            'client_token': self.generate_client_token(),
             'mode': self.enviroment_mode
         }
 
     def handle_processor_response(self, nonce, basket=None):
+        basket_lines = basket.all_lines()
+        if basket_lines and basket_lines[0].product.course_id == settings.SUBSCRIPTION_COURSE_ID:
+            return self.create_subscription(nonce, basket)
         return self.create_transaction(nonce, basket)
 
     def _record_refund(self, source, amount):
@@ -103,11 +106,15 @@ class Braintree(BasePaymentProcessor):
                          transaction_id, result.message)
             raise GatewayError
 
-    def generate_client_token(self, user):
-        params = {}
-        customer = None
-        customer_id = "{}".format(user.id)
+    def log_deep_errors(self, errors):
+        for error in errors:
+            logger.error("[%s][%s] %s",
+                         error.attribute,
+                         error.code,
+                         error.message)
 
+    def get_or_create_customer(self, user):
+        customer_id = str(user.id)
         try:
             customer = braintree.Customer.find(customer_id)
             logger.debug('Found existing Braintree customer [%s].',
@@ -115,36 +122,25 @@ class Braintree(BasePaymentProcessor):
             braintree.Customer.update(customer_id, {
                 'email': user.email,
                 'first_name': user.first_name,
-                'last_name': user.last_name,
-                # custom fields need to be added in braintree admin panel
-                # before we can use it here. More info
-                # https://developers.braintreepayments.com/reference/request/customer/create/python
-                # 'custom_fields': {
-                #     'full_name': user.get_full_name()
-                # }
+                'last_name': user.last_name
             })
         except braintree.exceptions.not_found_error.NotFoundError:
             result = braintree.Customer.create({
                 'id': customer_id,
                 'email': user.email,
                 'first_name': user.first_name,
-                'last_name': user.last_name,
-                # 'custom_fields': {
-                #     'full_name': user.get_full_name()
-                # }
+                'last_name': user.last_name
             })
             if result.is_success:
                 customer = result.customer
                 logger.info('Created new Braintree customer [%s].',
                             customer_id)
             else:
-                # TODO Handle customer creation errors
-                logger.error(result)
-                pass
+                self.log_deep_errors(result.errors.deep_errors)
+        return customer
 
-            if customer:
-                params['customer_id'] = customer.id
-        return braintree.ClientToken.generate(params)
+    def generate_client_token(self):
+        return braintree.ClientToken.generate()
 
     @classmethod
     def braintree_object_tree_to_dict(cls, braintree_object):
@@ -216,9 +212,92 @@ class Braintree(BasePaymentProcessor):
             raise GatewayError
 
         else:
-            # TODO Log the error!
-            # for error in result.errors.deep_errors:
-            #     print("attribute: " + error.attribute)
-            #     print("  code: " + error.code)
-            #     print("  message: " + error.message)
+            self.log_deep_errors(result.errors.deep_errors)
             raise GatewayError
+
+    def get_or_create_customer_payment_method(self, nonce, customer):
+        """
+        Retrieve a braintree customer payment method if it
+        does not exist create one
+
+        Arguments:
+            nonce - Braintree payment nonce
+            customer - Braintree Customer instance
+
+        Returns:
+            It will return braintree PaymentMethod instance or
+            throw GatewayError Exception
+        """
+        customer_id = str(customer.id)
+        try:
+            customer_payment_method = customer.payment_methods[0].token
+        except IndexError:
+            customer_payment_method = ''
+
+        try:
+            result = braintree.PaymentMethod.find(customer_payment_method)
+            token = result.token
+            logger.info('Found existing PaymentMethod [%s] for customer [%s].',
+                        token, customer_id)
+        except braintree.exceptions.not_found_error.NotFoundError:
+            result = braintree.PaymentMethod.create({
+                "customer_id": customer_id,
+                "payment_method_nonce": nonce
+            })
+            if result.is_success:
+                token = result.payment_method.token
+                logger.info('Created new PaymentMethod [%s] for customer [%s].',
+                            token, customer_id)
+            else:
+                self.log_deep_errors(result.errors.deep_errors)
+                return GatewayError
+        return token
+
+    def create_subscription(self, nonce, basket):
+
+        customer = self.get_or_create_customer(basket.owner)
+
+        payment_method_token = self.get_or_create_customer_payment_method(nonce, customer)
+
+        result = braintree.Subscription.create({
+            'payment_method_token': payment_method_token,
+            'plan_id': settings.SUBSCRIPTION_PLAN_ID
+        })
+        transaction = result.subscription
+
+        if result.is_success:
+            # Create Source to track all transactions related to this processor and order
+            source_type, __ = SourceType.objects.get_or_create(name=self.NAME)
+            currency = basket.currency
+            total = basket.total_incl_tax
+            transaction_id = transaction.id
+
+            label = None
+            card_type = None
+
+            if transaction.transactions and hasattr(transaction.transactions[0], 'credit_card'):
+                label = '%s******%s' % (transaction.transactions[0].credit_card['bin'],
+                                        transaction.transactions[0].credit_card['last_4'])
+                card_type = transaction.transactions[0].credit_card['card_type'].lower()
+
+            source = Source(source_type=source_type,
+                            currency=currency,
+                            amount_allocated=total,
+                            amount_debited=total,
+                            reference=transaction_id,
+                            label=label,
+                            card_type=card_type)
+
+            # Create PaymentEvent to track
+            event_type, __ = PaymentEventType.objects.get_or_create(
+                name=PaymentEventTypeName.PAID
+            )
+            event = PaymentEvent(event_type=event_type,
+                                 amount=total,
+                                 reference=transaction_id,
+                                 processor_name=self.NAME)
+            return source, event
+        else:
+            logger.error('Subscription failed: [%s]', result)
+            self.log_deep_errors(result.errors.deep_errors)
+        raise GatewayError

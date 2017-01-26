@@ -19,7 +19,7 @@
   border-radius: 0;
 
   // Add our own border
-  border-bottom: $navbar-border-bottom-width solid palette(primary, accent);
+  // border-bottom: $navbar-border-bottom-width solid palette(primary, accent);
 
   // Vertically center the logo
   .navbar-brand {
@@ -121,6 +121,154 @@
     &:hover,
     &:focus {
       border-bottom-color: transparent;
+    }
+  }
+}
+
+.header {
+  background-color: #0ca8e3;
+  border-bottom: 0;
+
+  .icon-bar {
+    background-color: white;
+  }
+
+  .navbar-toggle {
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+
+  .nav {
+    display: block;
+    float: none;
+
+    & > li {
+      padding: 5px 10px;
+
+      .menu-item {
+        border-radius: 0;
+        padding: 0 5px;
+        margin: 0 20px;
+        font-family: $titilium;
+      }
+    }
+  }
+}
+
+.header-top {
+  border-top: 1px solid transparent;
+  background: #0ca8e3;
+  font-size: 18px;
+  padding: 35px 0;
+
+  .container {
+    background: transparent;
+    position: relative;
+
+    .logo {
+      position: absolute;
+      left: 0;
+      top: -15px;
+      display: block;
+      height: 50px;
+      width: 138px;
+      background: url('/static/images/edevate-logo.svg') no-repeat;
+    }
+
+    .actions {
+      position: absolute;
+      right: 0;
+      top: -5px;
+
+      .btn-header {
+        font-family: $titilium;
+        border: 1px solid transparent;
+        color: #ffffff;
+        background-color: transparent;
+        border-color: #ffffff;
+        display: inline-block;
+        font-weight: bold;
+        padding: 6px 12px;
+        transition: all .2s;
+
+        &:hover {
+          color: #0ca8e3;
+          background-color: #ffffff;
+          border-color: #ffffff;
+        }
+
+        span {
+          font-family: $titilium;
+          max-width: 200px;
+          overflow: hidden;
+          display: inline-block;
+          vertical-align: middle;
+        }
+      }
+    }
+  }
+
+  .nav {
+    text-align: center;
+    & > li {
+      float: none;
+      display: inline-block;
+
+      .menu-item {
+        font-family: $titilium;
+        border-bottom: 2px solid #0ca8e3;
+        color: #ffffff;
+        border-radius: 0;
+        padding: 0 5px;
+        margin: 0 20px;
+        outline: 0;
+
+        &:hover {
+          background: #0ca8e3;
+          border-bottom: 2px solid #ffffff;
+        }
+      }
+    }
+  }
+}
+
+.header-menu {
+  background-color: #076284;
+  font-size: 16px;
+  margin: 0 -15px;
+  padding: 5px 0;
+  text-align: center !important;
+
+  .container {
+    background: transparent;
+  }
+
+  .navbar-nav {
+    & > li {
+      float: none;
+      display: inline-block;
+    }
+  }
+
+  .nav {
+    & > li {
+      outline: 0;
+
+      &:hover {
+        a {
+          font-family: $titilium;
+          background: #076284;
+          border-bottom: 2px solid white;
+        }
+      }
+
+      a {
+        font-family: $titilium;
+        border-bottom: 2px solid #076284;
+        color: white;
+        outline: 0;
+      }
     }
   }
 }
