@@ -102,6 +102,16 @@ class AutoAuth(View):
         return redirect('/')
 
 
+class OpenedxSubscription(View):
+    """
+    Redirects to openedx subscription page
+    """
+
+    def get(self, request):
+        openedx_subscription_page = "{}/verify_student/subscribe/".format(settings.LMS_URL_ROOT)
+        return redirect(openedx_subscription_page)
+
+
 class StaffOnlyMixin(object):
     """ Makes sure only staff users can access the view. """
 
