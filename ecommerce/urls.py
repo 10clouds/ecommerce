@@ -47,6 +47,8 @@ urlpatterns = [
     url('', include(AUTH_URLS)),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^auto_auth/$', core_views.AutoAuth.as_view(), name='auto_auth'),
+    url(r'^openedx_subscription/$', core_views.OpenedxSubscription.as_view(),
+        name='openedx_subscription'),
     url(r'^api-auth/', include(AUTH_URLS, namespace='rest_framework')),
     url(r'^api-docs/', include('rest_framework_swagger.urls')),
     url(r'^courses/', include('ecommerce.courses.urls', namespace='courses')),
