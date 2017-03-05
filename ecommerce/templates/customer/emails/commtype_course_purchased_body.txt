@@ -3,13 +3,12 @@
 
 {% blocktrans %}Hi {{full_name}},{% endblocktrans %}
 
-{% blocktrans with course_title=course_title platform_name=platform_name %}Thank you for purchasing {{course_title}}. The charge below will appear on your next credit or debit card statement with a company name of {{platform_name}}.{% endblocktrans %}
+{% blocktrans with course_title=course_title %}Thank you for purchasing {{course_title}}.{% endblocktrans %}
 
-{% blocktrans %}You can access your course and complete your verification (if required) on your {{platform_name}} dashboard. {% endblocktrans %}
-{% blocktrans %}To explore other great courses, visit the {{platform_name}} website. More courses are added every day!{% endblocktrans %}
+{% blocktrans with lms_dashboard=lms_dashboard %}You can access your course on {{lms_dashboard}}.{% endblocktrans %}
+{% blocktrans with lms_courses=lms_courses %}To explore other great courses, visit the {{lms_courses}}. More courses are added every day!{% endblocktrans %}
 
 {% trans "Thank you. We hope you enjoy the course!" %}
 
-{% blocktrans %}{{platform_name}} team{% endblocktrans %}
+{% blocktrans %}Edevate team{% endblocktrans %}
 
-{% trans "The edX team" %}
