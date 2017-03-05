@@ -110,11 +110,8 @@ def send_order_completion_email(sender, order=None, **kwargs):  # pylint: disabl
                     {
                         'course_title': product.title,
                         'full_name': order.user.get_full_name(),
-                        'platform_name': settings.PLATFORM_NAME,
-                        'receipt_page_url': get_lms_url(
-                            '{}?orderNum={}'.format(settings.RECEIPT_PAGE_PATH, order.number)
-                        ),
-
+                        'lms_dashboard': get_lms_url('dashboard'),
+                        'lms_courses': get_lms_url('courses')
                     },
                     order.site
                 )
