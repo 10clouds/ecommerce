@@ -8,7 +8,4 @@
 {% blocktrans with lms_dashboard=lms_dashboard %}You can access your course on {{lms_dashboard}}.{% endblocktrans %}
 {% blocktrans with lms_courses=lms_courses %}To explore other great courses, visit the {{lms_courses}}. More courses are added every day!{% endblocktrans %}
 
-{% trans "Thank you. We hope you enjoy the course!" %}
-
-{% blocktrans %}Edevate team{% endblocktrans %}
-
+{% trans "We hope you enjoy the course!" %}
