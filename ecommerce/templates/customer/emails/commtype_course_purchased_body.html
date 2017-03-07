@@ -8,13 +8,12 @@
         <!--/message HTML content -->
         <p>{% blocktrans %}Hi {{full_name}},{% endblocktrans %}</p>
         <br>
-        <p>{% blocktrans with course_title=course_title platform_name=platform_name %}Thank you for purchasing {{course_title}}. The charge below will appear on your next credit or debit card statement with a company name of {{platform_name}}.{% endblocktrans %}</p>
+        <p>{% blocktrans with course_title=course_title %}Thank you for purchasing {{course_title}}.{% endblocktrans %}</p>
         <br>
-        <p>{% blocktrans %}You can access your course and complete your verification (if required) on your {{platform_name}} dashboard. {% endblocktrans %} </p>
-        <p>{% blocktrans %}To explore other great courses, visit the {{platform_name}} website. More courses are added every day!{% endblocktrans %}</p>
+        <p>{% blocktrans with lms_dashboard=lms_dashboard %}You can access your course on {{lms_dashboard}}. {% endblocktrans %} </p>
+        <p>{% blocktrans with lms_courses=lms_courses %}To explore other great courses, visit the {{lms_courses}}.{% endblocktrans %}</p>
         <br>
-        <p>{% trans "Thank you. We hope you enjoy the course!" %}</p>
-        <p>{% blocktrans %}{{platform_name}} team {% endblocktrans %}</p>
+        <p>{% trans "We hope you enjoy the course!" %}</p>
         <!--/message HTML content -->
         <br><br>
     </td>
@@ -24,7 +23,7 @@
     <td class="footer-padding" style="padding-left: 30px; padding-right: 30px; font-size: 13px; line-height: 20px; font-family: Open Sans, sans-serif; color: #002D40; background-color: #f3f3f3;" align="left">
         <!--footer content -->
         <br>
-        <p>{% blocktrans with course_title=course_title platform_name=platform_name %}You are receiving this email because you purchased a seat in the {{platform_name}} course {{course_title}}.{% endblocktrans %}</p>
+        <p>{% blocktrans with course_title=course_title %}You are receiving this email because you purchased a seat in the {{course_title}}.{% endblocktrans %}</p>
         <br>
         <!--/ end footer content -->
     </td>
